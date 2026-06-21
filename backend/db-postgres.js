@@ -39,7 +39,7 @@ export async function initializeSchema() {
     }
   } catch (error) {
     console.error('✗ Schema initialization error:', error.message);
-    // Don't exit - allow the app to continue
+    throw error; // Throw the error so the server doesn't start with missing tables
   }
 }
 
