@@ -188,8 +188,8 @@ app.get("*", (req, res) => {
   res.sendFile(join(distPath, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`AgriHub backend running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`AgriHub backend running on port ${PORT}`);
   
   // Start payment queue worker
   if (process.env.ENABLE_PAYMENT_QUEUE !== 'false') {
