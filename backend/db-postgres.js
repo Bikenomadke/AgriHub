@@ -23,9 +23,9 @@ const pool = new Pool({
 // Initialize database schema on startup
 export async function initializeSchema() {
   try {
-    // Check if schema already exists
+    // Check if tables actually exist (not just the schema)
     const schemaCheck = await pool.query(
-      `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'agrihub'`
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'agrihub' AND table_name = 'users'`
     );
 
     if (schemaCheck.rows.length === 0) {
