@@ -27,7 +27,7 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-function formatPhone(p) {
+export function formatPhone(p) {
   const cleaned = p.replace(/\D/g, "");
   if (cleaned.startsWith("0")) return "254" + cleaned.slice(1);
   if (cleaned.startsWith("254") && cleaned.length === 12) return cleaned;
@@ -125,7 +125,7 @@ async function detectFraud(userId, amount, phone) {
 }
 
 // ─── Simulated STK Push (fallback when no real credentials) ────────────────────
-async function simulatedStkPush(phone, amount, transactionId) {
+export async function simulatedStkPush(phone, amount, transactionId) {
   const id = uuid();
   await pool.query(`INSERT INTO agrihub.mpesa_requests (id, transaction_id, phone, amount, status) VALUES ($1, $2, $3, $4, 'pending')`,
     [id, transactionId, phone, amount]);
@@ -150,7 +150,7 @@ async function simulatedStkPush(phone, amount, transactionId) {
 }
 
 // ─── Real Daraja STK Push ─────────────────────────────────────────────────────
-async function realStkPush(phone, amount, transactionId) {
+export async function realStkPush(phone, amount, transactionId) {
   const token = await getAccessToken();
   const env = process.env.MPESA_ENV === "production"
     ? "https://api.safaricom.co.ke"
