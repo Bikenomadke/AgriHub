@@ -137,6 +137,22 @@ CREATE TABLE agrihub.farmers (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
+CREATE TABLE agrihub.escrow_accounts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    investor_id UUID NOT NULL REFERENCES agrihub.users(id),
+    farmer_id UUID NOT NULL REFERENCES agrihub.farmers(id),
+    field_id UUID NOT NULL REFERENCES agrihub.fields(id),
+    transaction_id UUID REFERENCES agrihub.transactions(id),
+    amount REAL NOT NULL,
+    release_conditions TEXT,
+    status TEXT DEFAULT 'locked' CHECK(status IN ('locked','released','refunded','partial_release')),
+    released_amount REAL DEFAULT 0,
+    released_at TIMESTAMPTZ,
+    refund_amount REAL DEFAULT 0,
+    refunded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 CREATE TABLE agrihub.wallets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -149,23 +165,6 @@ CREATE TABLE agrihub.wallets (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
-);
-
-CREATE TABLE agrihub.wallet_transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    wallet_id UUID NOT NULL REFERENCES agrihub.wallets(id),
-    transaction_type TEXT NOT NULL CHECK(transaction_type IN ('deposit','withdrawal','payment','refund','escrow_deposit','escrow_release','fee','adjustment')),
-    amount REAL NOT NULL,
-    balance_before REAL NOT NULL,
-    balance_after REAL NOT NULL,
-    reference TEXT,
-    description TEXT,
-    related_transaction_id UUID REFERENCES agrihub.transactions(id),
-    related_escrow_id UUID REFERENCES agrihub.escrow_accounts(id),
-    related_payment_request_id UUID REFERENCES agrihub.payment_requests(id),
-    status TEXT DEFAULT 'completed' CHECK(status IN ('pending','completed','failed','reversed')),
-    metadata JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE agrihub.payment_requests (
@@ -217,21 +216,21 @@ CREATE TABLE agrihub.mpesa_transactions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE agrihub.escrow_accounts (
+CREATE TABLE agrihub.wallet_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    investor_id UUID NOT NULL REFERENCES agrihub.users(id),
-    farmer_id UUID NOT NULL REFERENCES agrihub.farmers(id),
-    field_id UUID NOT NULL REFERENCES agrihub.fields(id),
-    transaction_id UUID REFERENCES agrihub.transactions(id),
+    wallet_id UUID NOT NULL REFERENCES agrihub.wallets(id),
+    transaction_type TEXT NOT NULL CHECK(transaction_type IN ('deposit','withdrawal','payment','refund','escrow_deposit','escrow_release','fee','adjustment')),
     amount REAL NOT NULL,
-    release_conditions TEXT,
-    status TEXT DEFAULT 'locked' CHECK(status IN ('locked','released','refunded','partial_release')),
-    released_amount REAL DEFAULT 0,
-    released_at TIMESTAMPTZ,
-    refund_amount REAL DEFAULT 0,
-    refunded_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    balance_before REAL NOT NULL,
+    balance_after REAL NOT NULL,
+    reference TEXT,
+    description TEXT,
+    related_transaction_id UUID REFERENCES agrihub.transactions(id),
+    related_escrow_id UUID REFERENCES agrihub.escrow_accounts(id),
+    related_payment_request_id UUID REFERENCES agrihub.payment_requests(id),
+    status TEXT DEFAULT 'completed' CHECK(status IN ('pending','completed','failed','reversed')),
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE agrihub.reconciliation_records (
@@ -452,6 +451,17 @@ CREATE TRIGGER update_payment_queue_updated_at BEFORE UPDATE ON agrihub.payment_
 
 CREATE TRIGGER update_system_config_updated_at BEFORE UPDATE ON agrihub.system_config
     FOR EACH ROW EXECUTE FUNCTION agrihub.update_updated_at_column();
+
+-- Failed Logins Table (for authentication security)
+CREATE TABLE IF NOT EXISTS agrihub.failed_logins (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  ip_address TEXT,
+  attempted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_failed_logins_username ON agrihub.failed_logins(username);
+CREATE INDEX IF NOT EXISTS idx_failed_logins_attempted_at ON agrihub.failed_logins(attempted_at);
 
 -- Analysis Unlocks Table
 CREATE TABLE IF NOT EXISTS agrihub.analysis_unlocks (
