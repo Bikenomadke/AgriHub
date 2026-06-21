@@ -1,5 +1,10 @@
 import { Pool } from "pg";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import config from "./utils/config.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // PostgreSQL connection pool configuration
 const pool = new Pool({
@@ -15,9 +20,33 @@ const pool = new Pool({
   ssl: process.env.DB_SSL_MODE === "require" ? { rejectUnauthorized: false } : false,
 });
 
+// Initialize database schema on startup
+async function initializeSchema() {
+  try {
+    // Check if schema already exists
+    const schemaCheck = await pool.query(
+      `SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'agrihub'`
+    );
+
+    if (schemaCheck.rows.length === 0) {
+      console.log('Schema not found — running full migration from schema-postgresql.sql...');
+      const sqlFile = path.join(__dirname, 'schema-postgresql.sql');
+      const sql = fs.readFileSync(sqlFile, 'utf8');
+      await pool.query(sql);
+      console.log('✓ Database schema and tables created successfully!');
+    } else {
+      console.log('✓ Database schema already exists — skipping migration.');
+    }
+  } catch (error) {
+    console.error('✗ Schema initialization error:', error.message);
+    // Don't exit - allow the app to continue
+  }
+}
+
 // Test connection on startup
 pool.on('connect', () => {
   console.log('✓ PostgreSQL connection established');
+  initializeSchema();
 });
 
 pool.on('error', (err) => {
