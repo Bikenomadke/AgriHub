@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Allow only non-sensitive data - everything else is excluded by default -->
+    <include domain="sharedpref" path="app_settings.xml" />
+    <include domain="file" path="documents/" />
+</full-backup-content>

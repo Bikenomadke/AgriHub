@@ -1,0 +1,1 @@
+This public folder is ready. Copy icon.png here manually.

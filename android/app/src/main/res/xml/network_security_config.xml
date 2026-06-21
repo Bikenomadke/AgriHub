@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Base config: No cleartext traffic allowed -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Debug config: Allow cleartext for localhost only in development -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
+    
+    <!-- Specific domain configurations for production APIs -->
+    <domain-config>
+        <domain includeSubdomains="true">api.safaricom.co.ke</domain>
+        <domain includeSubdomains="true">sandbox.safaricom.co.ke</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+        <!-- Certificate pinning disabled - add actual production pins before deployment -->
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!-- Block extraction of sensitive data -->
+    <cloud-backup>
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="user_credentials.xml" />
+        <exclude domain="database" path="agrihub.db" />
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="temp/" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="user_credentials.xml" />
+        <exclude domain="database" path="agrihub.db" />
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="temp/" />
+    </device-transfer>
+</data-extraction-rules>
