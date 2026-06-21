@@ -15,29 +15,24 @@ const JWT_SECRET = config.JWT_SECRET;
 
 // Create failed_logins table if not exists
 async function initializeAuthTables() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS agrihub.failed_logins (
-      id TEXT PRIMARY KEY,
-      username TEXT NOT NULL,
-      ip_address TEXT,
-      attempted_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_failed_logins_username ON agrihub.failed_logins(username)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_failed_logins_attempted_at ON agrihub.failed_logins(attempted_at)`);
-}
-
-initializeAuthTables();
-
-// Seed default users if not exists (with configurable passwords from env)
-async function seedDefaultUsers() {
-  // Admin is now created in Supabase, no local seeding needed
-  const count = await queryOne("SELECT COUNT(*) as c FROM agrihub.users");
-  if (count.c === 0) {
-    console.log("No users found. Admin should be created in Supabase dashboard.");
+  try {
+    // Ensure schema exists first
+    await pool.query('CREATE SCHEMA IF NOT EXISTS agrihub');
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS agrihub.failed_logins (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        ip_address TEXT,
+        attempted_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_failed_logins_username ON agrihub.failed_logins(username)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_failed_logins_attempted_at ON agrihub.failed_logins(attempted_at)`);
+  } catch (error) {
+    console.error('Failed to initialize auth tables:', error);
   }
 }
-seedDefaultUsers();
 
 // Check if account is locked
 async function isAccountLocked(username) {

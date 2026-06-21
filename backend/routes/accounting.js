@@ -108,8 +108,6 @@ async function initializeAccountingTables() {
   }
 }
 
-initializeAccountingTables();
-
 // ─── POST /api/accounting/entry ───────────────────────────────────────────────
 router.post("/entry", authorize("Admin"), async (req, res) => {
   try {
