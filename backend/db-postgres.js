@@ -21,7 +21,7 @@ const pool = new Pool({
 });
 
 // Initialize database schema on startup
-async function initializeSchema() {
+export async function initializeSchema() {
   try {
     // Check if schema already exists
     const schemaCheck = await pool.query(
@@ -46,7 +46,6 @@ async function initializeSchema() {
 // Test connection on startup
 pool.on('connect', () => {
   console.log('✓ PostgreSQL connection established');
-  initializeSchema();
 });
 
 pool.on('error', (err) => {

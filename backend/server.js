@@ -6,8 +6,13 @@ import { dirname, join } from "path";
 import config from "./utils/config.js";
 import securityHeaders from "./middleware/security-headers.js";
 import { auditMiddleware } from "./utils/audit-logger.js";
-import pool, { queryOne } from "./db-postgres.js";
+import pool, { queryOne, initializeSchema } from "./db-postgres.js";
 import { createMetricsServer, metricsMiddleware } from "./utils/metrics.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Wait for database initialization and table creation before importing routes
+await initializeSchema();
 
 import authRoutes from "./routes/auth.js";
 import fieldRoutes from "./routes/fields.js";
@@ -26,8 +31,6 @@ import analysisUnlockRoutes from "./routes/analysis-unlocks.js";
 import userManagementRoutes from "./routes/user-management.js";
 import billingRoutes from "./routes/billing.js";
 import paymentQueueWorker from "./workers/paymentQueue.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = config.PORT;
 
