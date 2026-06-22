@@ -331,7 +331,7 @@ CREATE INDEX idx_sessions_user_id ON agrihub.sessions(user_id);
 CREATE INDEX idx_sessions_device_id ON agrihub.sessions(device_id);
 CREATE INDEX idx_sessions_expires_at ON agrihub.sessions(expires_at);
 CREATE INDEX idx_sessions_revoked_at ON agrihub.sessions(revoked_at) WHERE revoked_at IS NULL;
-CREATE INDEX idx_sessions_cleanup ON agrihub.sessions(expires_at) WHERE expires_at < NOW();
+
 
 -- Fields indexes
 CREATE INDEX idx_fields_polygon ON agrihub.fields USING GIST(polygon);
