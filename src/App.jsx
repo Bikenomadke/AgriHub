@@ -3828,7 +3828,8 @@ function WeighbridgeScreen({transactions,setTransactions,settings,setSettings,ro
   const grossProfit=expectedPayout-totalCost, margin=expectedPayout>0?(grossProfit/expectedPayout*100):0;
 
   const addTxn = async ()=>{
-    if (!form.tons||!form.farmer_name) return;
+    if (!form.farmer_name) { alert("Farmer Name is required!"); return; }
+    if (!form.tons) { alert("Tons is required!"); return; }
     if (!form.ticket_number) { alert("Factory Ticket Number is required!"); return; }
     try {
       const newTxn = await api.createTransaction({

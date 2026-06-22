@@ -65,9 +65,15 @@ router.get("/", authenticate, async (req, res) => {
 
 // POST /api/transactions
 router.post("/", authorize("Admin", "Weighbridge Trader"), async (req, res) => {
+  console.log("=> [TRANSACTION] Incoming POST request!");
+  console.log("   User:", req.user);
+  console.log("   Body:", req.body);
   try {
     const { farmer_name, tons, buy_price, total_cost, expected_payout, gross_profit, date, note, ticket_number, ticket_image } = req.body;
-    if (!farmer_name || !tons || !ticket_number) return res.status(400).json({ error: "Farmer name, tons, and ticket number required" });
+    if (!farmer_name || !tons || !ticket_number) {
+      console.log("=> [TRANSACTION] Failed: Missing required fields");
+      return res.status(400).json({ error: "Farmer name, tons, and ticket number required" });
+    }
 
     const id = uuid();
     await pool.query(
@@ -80,9 +86,10 @@ router.post("/", authorize("Admin", "Weighbridge Trader"), async (req, res) => {
       ]
     );
     const txn = await queryOne("SELECT * FROM agrihub.transactions WHERE id = $1", [id]);
+    console.log("=> [TRANSACTION] Successfully created transaction:", id);
     res.status(201).json(txn);
   } catch (error) {
-    console.error("Error creating transaction:", error);
+    console.error("=> [TRANSACTION] Error creating transaction:", error);
     res.status(500).json({ error: "Failed to create transaction", details: error.message });
   }
 });
