@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import config from "./utils/config.js";
+import bcrypt from "bcryptjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,17 +24,31 @@ const pool = new Pool({
 // Initialize database schema on startup
 export async function initializeSchema() {
   try {
-    // Check if tables actually exist (not just the schema)
+    // Check if the final table exists to ensure migration didn't fail halfway
     const schemaCheck = await pool.query(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'agrihub' AND table_name = 'users'`
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'agrihub' AND table_name = 'payment_queue'`
     );
 
     if (schemaCheck.rows.length === 0) {
-      console.log('Schema not found — running full migration from schema-postgresql.sql...');
+      console.log('Incomplete or missing schema found. Rebuilding from scratch...');
+      
+      // Drop broken schema if it exists to avoid "relation already exists" errors
+      await pool.query('DROP SCHEMA IF EXISTS agrihub CASCADE');
+      
       const sqlFile = path.join(__dirname, 'schema-postgresql.sql');
       const sql = fs.readFileSync(sqlFile, 'utf8');
       await pool.query(sql);
       console.log('✓ Database schema and tables created successfully!');
+      
+      // Seed default admin
+      const adminPass = await bcrypt.hash(config.DEFAULT_ADMIN_PASSWORD || 'password', 10);
+      await pool.query(
+        `INSERT INTO agrihub.users (id, username, password, role, name, color)
+         VALUES (gen_random_uuid(), $1, $2, 'Admin', 'System Admin', '#2c3e50')
+         ON CONFLICT (username) DO NOTHING`,
+        [config.DEFAULT_ADMIN_USERNAME || 'admin', adminPass]
+      );
+      console.log('✓ Default admin seeded successfully!');
     } else {
       console.log('✓ Database schema already exists — skipping migration.');
     }
