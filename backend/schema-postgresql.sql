@@ -403,6 +403,57 @@ INSERT INTO agrihub.system_config (key, value, description) VALUES
     ('auto_reconciliation', 'enabled', 'Enable automatic daily reconciliation');
 
 -- ============================================
+-- ACCOUNTING MODULE
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS agrihub.chart_of_accounts (
+  code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('asset','liability','equity','revenue','expense')),
+  balance REAL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS agrihub.journal_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_number TEXT UNIQUE NOT NULL,
+  date TIMESTAMPTZ NOT NULL,
+  description TEXT,
+  reference TEXT,
+  status TEXT DEFAULT 'posted' CHECK(status IN ('draft','posted','void')),
+  created_by UUID REFERENCES agrihub.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS agrihub.ledger_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  journal_entry_id UUID REFERENCES agrihub.journal_entries(id),
+  account_code TEXT REFERENCES agrihub.chart_of_accounts(code),
+  debit REAL DEFAULT 0,
+  credit REAL DEFAULT 0,
+  description TEXT,
+  reference TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_journal_entries_date ON agrihub.journal_entries(date);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_journal ON agrihub.ledger_entries(journal_entry_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_account ON agrihub.ledger_entries(account_code);
+
+INSERT INTO agrihub.chart_of_accounts (code, name, type) VALUES
+  ('1000', 'Cash', 'asset'),
+  ('1100', 'Wallet Balances', 'asset'),
+  ('1200', 'Escrow Holdings', 'asset'),
+  ('1300', 'Accounts Receivable', 'asset'),
+  ('2000', 'Accounts Payable', 'liability'),
+  ('3000', 'Investor Equity', 'equity'),
+  ('4000', 'Platform Revenue', 'revenue'),
+  ('5000', 'Platform Fees', 'revenue'),
+  ('5100', 'Transaction Costs', 'expense'),
+  ('5200', 'Farmer Payments', 'expense')
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================
 -- FUNCTIONS
 -- ============================================
 
@@ -465,9 +516,9 @@ CREATE INDEX IF NOT EXISTS idx_failed_logins_attempted_at ON agrihub.failed_logi
 
 -- Analysis Unlocks Table
 CREATE TABLE IF NOT EXISTS agrihub.analysis_unlocks (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  field_id TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  field_id UUID NOT NULL,
   amount_paid NUMERIC(10, 2) NOT NULL,
   mpesa_receipt TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'failed')),
