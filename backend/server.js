@@ -99,7 +99,34 @@ const authLimiter = rateLimit({
 
 app.use(limiter);
 app.use(cors({ 
-  origin: config.ALLOWED_ORIGINS,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // Android Capacitor apps use these origins
+    const androidOrigins = [
+      'capacitor://localhost',
+      'http://localhost',
+      'ionic://localhost',
+    ];
+    
+    const allowedOrigins = [
+      ...(config.ALLOWED_ORIGINS ? config.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : []),
+      ...androidOrigins,
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Also allow any localhost port for local dev
+    if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+      return callback(null, true);
+    }
+    
+    console.warn(`CORS blocked origin: ${origin}`);
+    return callback(null, false);
+  },
   credentials: true 
 }));
 app.use(securityHeaders);
@@ -183,13 +210,20 @@ app.get("/live", (req, res) => {
 
 app.get("/api/health", (req, res) => res.json({ ok: true, timestamp: new Date().toISOString() }));
 
-// In production, serve the built frontend from dist/
+// In production, serve the built frontend from dist/ (if it exists)
 const distPath = join(__dirname, "../dist");
-app.use(express.static(distPath));
-app.get("*", (req, res) => {
-  if (req.path.startsWith("/api/") || req.path.startsWith("/uploads/")) return;
-  res.sendFile(join(distPath, "index.html"));
-});
+import fs from "fs";
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api/") || req.path.startsWith("/uploads/")) return;
+    res.sendFile(join(distPath, "index.html"));
+  });
+} else {
+  app.get("*", (req, res) => {
+    res.status(404).json({ error: "Not found", message: "API is running, but no frontend is served from this URL." });
+  });
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`AgriHub backend running on port ${PORT}`);
